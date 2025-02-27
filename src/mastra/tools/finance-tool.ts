@@ -6,8 +6,6 @@ import { createVectorQueryTool } from "@mastra/rag";
 
 import { financeData } from "./finance-data";
 
-let isInitialized = false;
-
 export const financeTool = createVectorQueryTool({
   id: "finance-tool",
   description: "A tool for managing finances",
@@ -34,8 +32,7 @@ export const pineconeVector = new PineconeVector(
 );
 
 const getFinanceData = async (query: string) => {
-  initializeFinanceData();
-
+  
   const { embedding } = await embed({
     model: openai.embedding("text-embedding-3-small"),
     value: query,
@@ -44,7 +41,7 @@ const getFinanceData = async (query: string) => {
   const results = await pineconeVector.query(
     process.env.PINECONE_INDEX as string,
     embedding,
-    10
+    100
   );
 
   const transactionDescriptions = results
@@ -56,9 +53,11 @@ const getFinanceData = async (query: string) => {
         return "";
       }
 
-      let transactions;
+      let transactions, totals;
       try {
-        transactions = JSON.parse(data.metadata.text).transactions;
+        const parsedData = JSON.parse(data.metadata.text);
+        transactions = parsedData.transactions;
+        totals = parsedData.totals;
         if (!transactions || typeof transactions !== "object") {
           console.warn("Parsed transactions is not an object:", transactions);
           return "";
@@ -99,9 +98,9 @@ const getFinanceData = async (query: string) => {
           return (
             `- Date: ${date}, Amount: ${amount} ${currencyCode}, ` +
             `Description: ${description}, Category: ${category}, ` +
-            `User: ${userGuid || "N/A"}` +
-            `Top Level Category: ${topLevelCategory}` +
-            `Type: ${type}`
+            `User: ${userGuid || "N/A"}, ` +
+            `Top Level Category: ${topLevelCategory}, Type: ${type}, ` +
+            `Totals: ${totals ? JSON.stringify(totals) : "N/A"}`
           );
         })
         .filter(Boolean)
@@ -118,12 +117,12 @@ const getFinanceData = async (query: string) => {
 };
 
 const initializeFinanceData = async () => {
-  if (isInitialized) return;
-
   try {
     const { user, transactions, totals } = financeData.data;
 
     const userText = JSON.stringify({ user });
+    const totalsText = JSON.stringify({ totals });
+
     try {
       const { embeddings: userEmbeddings } = await embedMany({
         model: openai.embedding("text-embedding-3-small"),
@@ -140,7 +139,6 @@ const initializeFinanceData = async () => {
       console.error("Error embedding user data:", error);
     }
 
-    const totalsText = JSON.stringify({ totals });
     try {
       const { embeddings: totalsEmbeddings } = await embedMany({
         model: openai.embedding("text-embedding-3-small"),
@@ -164,12 +162,15 @@ const initializeFinanceData = async () => {
       const batchKeys = transactionKeys.slice(i, i + batchSize);
       const transactionBatch = {};
 
-      batchKeys.forEach((key) => {
+      batchKeys.forEach((key: any) => {
         //@ts-ignore
         transactionBatch[key] = transactions[key];
       });
 
-      const batchText = JSON.stringify({ transactions: transactionBatch });
+      const batchText = JSON.stringify({
+        transactions: transactionBatch,
+        totals,
+      });
 
       try {
         const { embeddings } = await embedMany({
@@ -186,17 +187,11 @@ const initializeFinanceData = async () => {
               type: "transactions",
               batchIndex: i / batchSize,
               transactionIds: batchKeys
-                .map((key: any) => transactions[key].guid)
+                .map((key:any) => transactions[key].guid)
                 .join(","),
             },
           ]
         );
-
-        console.log(
-          `Embedded transactions batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(transactionKeys.length / batchSize)}`
-        );
-
-        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
         console.error(
           `Error embedding transactions batch ${i / batchSize + 1}:`,
@@ -205,10 +200,10 @@ const initializeFinanceData = async () => {
       }
     }
 
-    isInitialized = true;
     console.log("Finance data initialization complete");
   } catch (error) {
     console.error("Failed to initialize finance data:", error);
     throw error;
   }
 };
+
