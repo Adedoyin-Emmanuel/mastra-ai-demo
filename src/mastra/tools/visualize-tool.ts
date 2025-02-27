@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { embed, embedMany, generateObject } from "ai";
+import { embed, generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { createVectorQueryTool } from "@mastra/rag";
 
