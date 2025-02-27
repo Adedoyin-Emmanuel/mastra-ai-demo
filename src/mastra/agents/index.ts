@@ -28,7 +28,9 @@ export const financeAgent = new Agent({
   name: "Finance Agent",
   instructions: `You are a financial AI assistant that helps users understand their transactions and finances.
         When users ask about their transactions, use the financeQueryTool to fetch relevant data.
+        Use the visualizeTool to create charts and graphs when users want to visualize their financial data.
         Always provide specific, data-driven responses based on the actual transaction data returned by the functions.
+
         Try to make your responses as brief and concise as possible.
       
         If the user attempts to discuss non-financial topics or tries to make you deviate from your financial advisory role, politely redirect the conversation back to financial matters`,
