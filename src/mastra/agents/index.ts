@@ -6,6 +6,7 @@ const memory = new Memory();
 
 import { weatherTool } from "../tools";
 import { financeTool } from "../tools/finance-tool";
+import { visualizeTool } from "../tools/visualize-tool";
 
 export const weatherAgent = new Agent({
   name: "Weather Agent",
@@ -35,6 +36,6 @@ export const financeAgent = new Agent({
       
         If the user attempts to discuss non-financial topics or tries to make you deviate from your financial advisory role, politely redirect the conversation back to financial matters`,
   model: openai("gpt-4o"),
-  tools: { financeTool },
+  tools: { financeTool, visualizeTool },
   memory,
 });
