@@ -32,7 +32,6 @@ export const pineconeVector = new PineconeVector(
 );
 
 const getFinanceData = async (query: string) => {
-  
   const { embedding } = await embed({
     model: openai.embedding("text-embedding-3-small"),
     value: query,
@@ -46,10 +45,10 @@ const getFinanceData = async (query: string) => {
 
   const transactionDescriptions = results
     .map((data) => {
-      console.log("Processing data:", data);
+      //  console.log("Processing data:", data);
 
       if (!data.metadata || !data.metadata.text) {
-        console.warn("Missing metadata.text for:", data);
+        //console.warn("Missing metadata.text for:", data);
         return "";
       }
 
@@ -59,7 +58,7 @@ const getFinanceData = async (query: string) => {
         transactions = parsedData.transactions;
         totals = parsedData.totals;
         if (!transactions || typeof transactions !== "object") {
-          console.warn("Parsed transactions is not an object:", transactions);
+          /// console.warn("Parsed transactions is not an object:", transactions);
           return "";
         }
       } catch (error) {
@@ -89,11 +88,11 @@ const getFinanceData = async (query: string) => {
             !type ||
             !topLevelCategory
           ) {
-            console.warn("Skipping incomplete transaction:", transaction);
+            //console.warn("Skipping incomplete transaction:", transaction);
             return "";
           }
 
-          console.log("Transaction:", transaction);
+          //  console.log("Transaction:", transaction);
 
           return (
             `- Date: ${date}, Amount: ${amount} ${currencyCode}, ` +
@@ -187,7 +186,7 @@ const initializeFinanceData = async () => {
               type: "transactions",
               batchIndex: i / batchSize,
               transactionIds: batchKeys
-                .map((key:any) => transactions[key].guid)
+                .map((key: any) => transactions[key].guid)
                 .join(","),
             },
           ]
@@ -206,4 +205,3 @@ const initializeFinanceData = async () => {
     throw error;
   }
 };
-

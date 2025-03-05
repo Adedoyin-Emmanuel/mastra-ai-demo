@@ -15,6 +15,12 @@ app.post("/finance-agent", (req, res) => {
   agentTest.getFinanceAgentResponse(req, res);
 });
 
+app.post("/visualize-agent", (req, res) => {
+  const agentTest2 = new AgentTest();
+
+  agentTest2.getVisualizeAgentResponse(req, res);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { financeAgent } from "./src/mastra/agents";
+import { getVisualizationData } from "./src/mastra/tools/visualize-tool";
 
 export default class AgentTest {
   public async getFinanceAgentResponse(req: Request, res: Response) {
@@ -17,6 +18,16 @@ export default class AgentTest {
 
     return res.json({
       message: "Omor something went wrong broski",
+    });
+  }
+
+  public async getVisualizeAgentResponse(req: Request, res: Response) {
+    const { query } = req.body;
+
+    const response = await getVisualizationData(query);
+
+    return res.json({
+      data: response,
     });
   }
 }

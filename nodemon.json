@@ -1,4 +1,5 @@
 {
-  "watch": "index.ts",
+  "watch": "*.ts",
+  "ext": "ts",
   "exec": "bun index.ts"
 }
