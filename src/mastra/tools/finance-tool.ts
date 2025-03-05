@@ -40,77 +40,80 @@ const getFinanceData = async (query: string) => {
   const results = await pineconeVector.query(
     process.env.PINECONE_INDEX as string,
     embedding,
-    100
+    200
   );
 
-  const transactionDescriptions = results
-    .map((data) => {
-      //  console.log("Processing data:", data);
+  // Parse and collect all transactions from results
+  let allTransactions: any[] = [];
 
-      if (!data.metadata || !data.metadata.text) {
-        //console.warn("Missing metadata.text for:", data);
-        return "";
-      }
+  results.forEach((data) => {
+    if (!data.metadata || !data.metadata.text) {
+      return;
+    }
 
-      let transactions, totals;
-      try {
-        const parsedData = JSON.parse(data.metadata.text);
-        transactions = parsedData.transactions;
-        totals = parsedData.totals;
-        if (!transactions || typeof transactions !== "object") {
-          /// console.warn("Parsed transactions is not an object:", transactions);
-          return "";
-        }
-      } catch (error) {
-        console.error("Error parsing metadata.text:", error);
-        return "";
-      }
+    try {
+      const parsedData = JSON.parse(data.metadata.text);
+      const transactions = parsedData.transactions;
 
-      return Object.values(transactions)
-        .map((transaction: any) => {
-          const {
-            date,
-            topLevelCategory,
-            type,
-            amount,
-            currencyCode,
-            description,
-            category,
-            userGuid,
-          } = transaction || {};
-
-          if (
-            !date ||
-            !amount ||
-            !currencyCode ||
-            !description ||
-            !category ||
-            !type ||
-            !topLevelCategory
-          ) {
-            //console.warn("Skipping incomplete transaction:", transaction);
-            return "";
+      if (transactions && typeof transactions === "object") {
+        // Convert transactions object to array and add to allTransactions
+        Object.values(transactions).forEach((transaction: any) => {
+          if (transaction && transaction.date) {
+            allTransactions.push(transaction);
           }
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing metadata.text:", error);
+    }
+  });
 
-          //  console.log("Transaction:", transaction);
+  // Always sort transactions by date (newest first)
+  allTransactions.sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
-          return (
-            `- Date: ${date}, Amount: ${amount} ${currencyCode}, ` +
-            `Description: ${description}, Category: ${category}, ` +
-            `User: ${userGuid || "N/A"}, ` +
-            `Top Level Category: ${topLevelCategory}, Type: ${type}, ` +
-            `Totals: ${totals ? JSON.stringify(totals) : "N/A"}`
-          );
-        })
-        .filter(Boolean)
-        .join("\n");
+  // Limit to a reasonable number of transactions to display
+  const limitedTransactions = allTransactions.slice(0, 20);
+
+  const transactionDescriptions = limitedTransactions
+    .map((transaction: any) => {
+      const {
+        date,
+        topLevelCategory,
+        type,
+        amount,
+        currencyCode,
+        description,
+        category,
+        userGuid,
+      } = transaction || {};
+
+      if (
+        !date ||
+        !amount ||
+        !currencyCode ||
+        !description ||
+        !category ||
+        !type ||
+        !topLevelCategory
+      ) {
+        return "";
+      }
+
+      return (
+        `- Date: ${date}, Amount: ${amount} ${currencyCode}, ` +
+        `Description: ${description}, Category: ${category}, ` +
+        `User: ${userGuid || "N/A"}, ` +
+        `Top Level Category: ${topLevelCategory}, Type: ${type}`
+      );
     })
     .filter(Boolean)
     .join("\n");
 
   return {
     summary: transactionDescriptions
-      ? `Found relevant transactions:\n${transactionDescriptions}`
+      ? `Found ${limitedTransactions.length} relevant transactions:\n${transactionDescriptions}`
       : "No valid transactions found.",
   };
 };
