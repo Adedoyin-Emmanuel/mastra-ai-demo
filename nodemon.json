@@ -1,0 +1,4 @@
+{
+  "watch": "index.ts",
+  "exec": "bun index.ts"
+}

@@ -17,10 +17,13 @@
     "@mastra/memory": "^0.1.5",
     "@mastra/pinecone": "^0.1.5",
     "@mastra/rag": "^0.1.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "mastra": "^0.2.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/node": "^22.13.5",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3"

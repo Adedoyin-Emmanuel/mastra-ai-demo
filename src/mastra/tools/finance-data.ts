@@ -17,7 +17,7 @@ export const financeData = {
         amount: 29.54,
         currencyCode: "USD",
         description: "Seasons Salon Day & Spa",
-        guid: "TRN-c65ed969-2ae0-4355-9c67-0822079beb39",
+        guid: "TRN-c65ed969-2ae0-4355-9c67-0822579beb39",
         transactionId: "transfer-a7d41387-28bc-43c2-995d-582463c46a4c",
         isExpense: true,
         isIncome: false,
