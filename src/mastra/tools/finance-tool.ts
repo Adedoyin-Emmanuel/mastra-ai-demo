@@ -43,8 +43,10 @@ const getFinanceData = async (query: string) => {
     200
   );
 
-  // Parse and collect all transactions from results
   let allTransactions: any[] = [];
+
+  const queryLower = query.toLowerCase();
+  const queryTerms = queryLower.split(/\s+/).filter((term) => term.length > 2);
 
   results.forEach((data) => {
     if (!data.metadata || !data.metadata.text) {
@@ -56,9 +58,9 @@ const getFinanceData = async (query: string) => {
       const transactions = parsedData.transactions;
 
       if (transactions && typeof transactions === "object") {
-        // Convert transactions object to array and add to allTransactions
         Object.values(transactions).forEach((transaction: any) => {
           if (transaction && transaction.date) {
+            transaction._score = data.score;
             allTransactions.push(transaction);
           }
         });
@@ -68,13 +70,65 @@ const getFinanceData = async (query: string) => {
     }
   });
 
-  // Always sort transactions by date (newest first)
-  allTransactions.sort((a, b) => {
+  const filteredTransactions = allTransactions.filter((transaction: any) => {
+    const MIN_SCORE_THRESHOLD = 0.7;
+
+    if (transaction._score < MIN_SCORE_THRESHOLD) {
+      return false;
+    }
+
+    const descriptionMatch =
+      transaction.description &&
+      queryTerms.some((term) =>
+        transaction.description.toLowerCase().includes(term)
+      );
+
+    const categoryMatch =
+      transaction.category &&
+      queryTerms.some((term) =>
+        transaction.category.toLowerCase().includes(term)
+      );
+
+    const topLevelCategoryMatch =
+      transaction.topLevelCategory &&
+      queryTerms.some((term) =>
+        transaction.topLevelCategory.toLowerCase().includes(term)
+      );
+
+    const amountMatch = queryTerms.some((term) => {
+      const numMatch = term.match(/\d+(\.\d+)?/);
+      if (numMatch && transaction.amount) {
+        const queryAmount = parseFloat(numMatch[0]);
+        return Math.abs(transaction.amount - queryAmount) < 5;
+      }
+      return false;
+    });
+
+    const dateMatch = queryTerms.some((term) => {
+      if (
+        transaction.date &&
+        (term.includes("202") ||
+          /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/.test(term))
+      ) {
+        return transaction.date.toLowerCase().includes(term);
+      }
+      return false;
+    });
+
+    return (
+      descriptionMatch ||
+      categoryMatch ||
+      topLevelCategoryMatch ||
+      amountMatch ||
+      dateMatch
+    );
+  });
+
+  filteredTransactions.sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
-  // Limit to a reasonable number of transactions to display
-  const limitedTransactions = allTransactions.slice(0, 20);
+  const limitedTransactions = filteredTransactions.slice(0, 20);
 
   const transactionDescriptions = limitedTransactions
     .map((transaction: any) => {
@@ -114,7 +168,7 @@ const getFinanceData = async (query: string) => {
   return {
     summary: transactionDescriptions
       ? `Found ${limitedTransactions.length} relevant transactions:\n${transactionDescriptions}`
-      : "No valid transactions found.",
+      : "No transactions matching your query were found.",
   };
 };
 
